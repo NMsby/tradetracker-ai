@@ -1,12 +1,73 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { LogOut, User } from 'lucide-react'
+import { useTransactions, useTransactionSummary } from '@/hooks/useTransactions'
+import { LogOut, User, Plus, TrendingUp, TrendingDown, DollarSign } from 'lucide-react'
+import { transactionUtils } from '@/api/transactions'
+import TransactionForm from '@/components/forms/TransactionForm'
+import TransactionList from '@/components/dashboard/TransactionList'
+import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 const DashboardPage = () => {
     const { user, signOut } = useAuth()
+    const {
+        transactions,
+        categories,
+        loading,
+        createTransaction,
+        updateTransaction,
+        deleteTransaction
+    } = useTransactions()
+    const { summary, loading: summaryLoading } = useTransactionSummary('today')
+
+    const [showTransactionForm, setShowTransactionForm] = useState(false)
+    const [editingTransaction, setEditingTransaction] = useState(null)
+    const [formLoading, setFormLoading] = useState(false)
 
     const handleSignOut = async () => {
         await signOut()
+    }
+
+    const handleCreateTransaction = async (transactionData) => {
+        setFormLoading(true)
+        const { error } = await createTransaction(transactionData)
+
+        if (!error) {
+            setShowTransactionForm(false)
+        }
+
+        setFormLoading(false)
+        return { error }
+    }
+
+    const handleUpdateTransaction = async (transactionData) => {
+        if (!editingTransaction) return
+
+        setFormLoading(true)
+        const { error } = await updateTransaction(editingTransaction.id, transactionData)
+
+        if (!error) {
+            setEditingTransaction(null)
+            setShowTransactionForm(false)
+        }
+
+        setFormLoading(false)
+        return { error }
+    }
+
+    const handleEditTransaction = (transaction) => {
+        setEditingTransaction(transaction)
+        setShowTransactionForm(true)
+    }
+
+    const handleDeleteTransaction = async (transactionId) => {
+        if (window.confirm('Are you sure you want to delete this transaction?')) {
+            await deleteTransaction(transactionId)
+        }
+    }
+
+    const handleCloseForm = () => {
+        setShowTransactionForm(false)
+        setEditingTransaction(null)
     }
 
     return (
@@ -37,76 +98,159 @@ const DashboardPage = () => {
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-                    <p className="text-gray-600 mt-2">Welcome back! Here's your business overview.</p>
+                {/* Header Section */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+                        <p className="text-gray-600 mt-2">Track your business finances with AI-powered insights.</p>
+                    </div>
+                    <button
+                        onClick={() => setShowTransactionForm(true)}
+                        className="btn-primary mt-4 sm:mt-0 flex items-center space-x-2"
+                    >
+                        <Plus className="h-5 w-5" />
+                        <span>Add Transaction</span>
+                    </button>
                 </div>
 
-                {/* Placeholder for dashboard content */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* Profit Overview Card */}
-                    <div className="card">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Today's Profit</h3>
-                        <div className="text-3xl font-bold text-accent-600 mb-2">
-                            Coming Soon
-                        </div>
-                        <p className="text-sm text-gray-600">
-                            Real-time profit calculations will appear here
-                        </p>
-                    </div>
+                {/* Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    {summaryLoading ? (
+                        Array.from({ length: 4 }).map((_, index) => (
+                            <div key={index} className="card">
+                                <div className="animate-pulse">
+                                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                                    <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <>
+                            {/* Today's Revenue */}
+                            <div className="card bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-green-600">Today's Revenue</p>
+                                        <p className="text-2xl font-bold text-green-900">
+                                            {summary ? transactionUtils.formatCurrency(summary.totalRevenue) : 'KES 0'}
+                                        </p>
+                                    </div>
+                                    <TrendingUp className="h-8 w-8 text-green-600" />
+                                </div>
+                            </div>
 
-                    {/* Voice Input Card */}
-                    <div className="card">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Voice Input</h3>
-                        <div className="text-center py-8">
-                            <div className="text-4xl mb-4">🎤</div>
-                            <p className="text-sm text-gray-600">
-                                Voice transaction recording coming in next update
-                            </p>
-                        </div>
-                    </div>
+                            {/* Today's Expenses */}
+                            <div className="card bg-gradient-to-r from-red-50 to-red-100 border-red-200">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-red-600">Today's Expenses</p>
+                                        <p className="text-2xl font-bold text-red-900">
+                                            {summary ? transactionUtils.formatCurrency(summary.totalExpenses) : 'KES 0'}
+                                        </p>
+                                    </div>
+                                    <TrendingDown className="h-8 w-8 text-red-600" />
+                                </div>
+                            </div>
 
-                    {/* Receipt Scanner Card */}
-                    <div className="card">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Receipt Scanner</h3>
-                        <div className="text-center py-8">
-                            <div className="text-4xl mb-4">📸</div>
-                            <p className="text-sm text-gray-600">
-                                Photo receipt scanning feature coming soon
-                            </p>
+                            {/* Net Profit */}
+                            <div className="card bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-blue-600">Net Profit</p>
+                                        <p className={`text-2xl font-bold ${
+                                            summary && summary.netProfit >= 0 ? 'text-blue-900' : 'text-red-900'
+                                        }`}>
+                                            {summary ? transactionUtils.formatCurrency(summary.netProfit) : 'KES 0'}
+                                        </p>
+                                    </div>
+                                    <DollarSign className="h-8 w-8 text-blue-600" />
+                                </div>
+                            </div>
+
+                            {/* Profit Margin */}
+                            <div className="card bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-purple-600">Profit Margin</p>
+                                        <p className="text-2xl font-bold text-purple-900">
+                                            {summary ? `${summary.profitMargin}%` : '0%'}
+                                        </p>
+                                    </div>
+                                    <div className="text-2xl">📈</div>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                {/* Quick Actions */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <button
+                        onClick={() => setShowTransactionForm(true)}
+                        className="card card-hover text-left p-6 transition-all duration-200 hover:scale-105"
+                    >
+                        <div className="flex items-center space-x-4">
+                            <div className="text-4xl">💰</div>
+                            <div>
+                                <h3 className="font-semibold text-gray-900">Record Income</h3>
+                                <p className="text-sm text-gray-600">Add sales or other income</p>
+                            </div>
+                        </div>
+                    </button>
+
+                    <button
+                        onClick={() => setShowTransactionForm(true)}
+                        className="card card-hover text-left p-6 transition-all duration-200 hover:scale-105"
+                    >
+                        <div className="flex items-center space-x-4">
+                            <div className="text-4xl">🛒</div>
+                            <div>
+                                <h3 className="font-semibold text-gray-900">Track Expense</h3>
+                                <p className="text-sm text-gray-600">Log business expenses</p>
+                            </div>
+                        </div>
+                    </button>
+
+                    <div className="card bg-gradient-to-r from-primary-50 to-accent-50 border-primary-200">
+                        <div className="flex items-center space-x-4">
+                            <div className="text-4xl">🎤</div>
+                            <div>
+                                <h3 className="font-semibold text-gray-900">Voice Input</h3>
+                                <p className="text-sm text-gray-600">Coming in next update</p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Development Status */}
-                <div className="mt-12 card bg-blue-50 border-blue-200">
-                    <div className="text-center">
-                        <h2 className="text-2xl font-bold text-blue-900 mb-4">🚀 Development in Progress</h2>
-                        <p className="text-blue-700 mb-6">
-                            This is the foundation setup for TradeTracker AI. Core features like voice input,
-                            receipt scanning, and AI insights are being built in the next phases.
-                        </p>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                            <div className="bg-white rounded-lg p-3">
-                                <div className="text-green-600 font-semibold">✅ Complete</div>
-                                <div className="text-gray-600">Authentication</div>
+                {/* Recent Transactions */}
+                <div>
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-semibold text-gray-900">Recent Transactions</h2>
+                        {transactions.length > 0 && (
+                            <div className="text-sm text-gray-600">
+                                {transactions.length} total transaction{transactions.length !== 1 ? 's' : ''}
                             </div>
-                            <div className="bg-white rounded-lg p-3">
-                                <div className="text-green-600 font-semibold">✅ Complete</div>
-                                <div className="text-gray-600">Database Setup</div>
-                            </div>
-                            <div className="bg-white rounded-lg p-3">
-                                <div className="text-yellow-600 font-semibold">🚧 Next</div>
-                                <div className="text-gray-600">Voice Input</div>
-                            </div>
-                            <div className="bg-white rounded-lg p-3">
-                                <div className="text-yellow-600 font-semibold">🚧 Next</div>
-                                <div className="text-gray-600">AI Features</div>
-                            </div>
-                        </div>
+                        )}
                     </div>
+
+                    <TransactionList
+                        transactions={transactions}
+                        categories={categories}
+                        loading={loading}
+                        onEdit={handleEditTransaction}
+                        onDelete={handleDeleteTransaction}
+                    />
                 </div>
             </main>
+
+            {/* Transaction Form Modal */}
+            <TransactionForm
+                isOpen={showTransactionForm}
+                onClose={handleCloseForm}
+                onSubmit={editingTransaction ? handleUpdateTransaction : handleCreateTransaction}
+                initialData={editingTransaction}
+                loading={formLoading}
+            />
         </div>
     )
 }
