@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTransactions, useTransactionSummary } from '@/hooks/useTransactions'
-import { LogOut, User, Plus, TrendingUp, TrendingDown, DollarSign } from 'lucide-react'
+import { LogOut, User, Plus, TrendingUp, TrendingDown, DollarSign, Bug } from 'lucide-react'
 import { transactionUtils } from '@/api/transactions'
 import TransactionForm from '@/components/forms/TransactionForm'
 import TransactionList from '@/components/dashboard/TransactionList'

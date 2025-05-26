@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { transactionAPI, categoryAPI, subscribeToTransactions, subscribeToCategories } from '@/api/transactions'
+import { transactionAPI, categoryAPI, supabase } from '@/api/transactions'
 
 export const useTransactions = (filters = {}) => {
     const [transactions, setTransactions] = useState([])
@@ -22,7 +22,7 @@ export const useTransactions = (filters = {}) => {
         }
 
         setLoading(false)
-    }, [filters])
+    }, [JSON.stringify(filters)])
 
     // Fetch categories
     const fetchCategories = useCallback(async () => {
@@ -132,63 +132,65 @@ export const useTransactions = (filters = {}) => {
         fetchTransactions()
         fetchCategories()
         fetchSummary()
-    }, [fetchTransactions, fetchCategories, fetchSummary])
+    }, [])
+
+    // Separate effect for when filters change
+    useEffect(() => {
+        if (Object.keys(filters).length > 0) {
+            fetchTransactions()
+        }
+    }, [JSON.stringify(filters)])
 
     // Real-time subscriptions
     useEffect(() => {
-        const transactionSubscription = subscribeToTransactions((payload) => {
-            console.log('Transaction change:', payload)
+        let transactionSubscription = null
+        let categorySubscription = null
 
-            switch (payload.eventType) {
-                case 'INSERT':
-                    setTransactions(prev => [payload.new, ...prev])
-                    break
-                case 'UPDATE':
-                    setTransactions(prev =>
-                        prev.map(transaction =>
-                            transaction.id === payload.new.id ? payload.new : transaction
-                        )
-                    )
-                    break
-                case 'DELETE':
-                    setTransactions(prev =>
-                        prev.filter(transaction => transaction.id !== payload.old.id)
-                    )
-                    break
-            }
+        try {
+            // Subscribe to transaction changes
+            transactionSubscription = supabase
+                .channel('transactions_changes')
+                .on('postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'transactions'
+                    },
+                    (payload) => {
+                        console.log('Transaction change:', payload)
+                        // Refetch data on any change to avoid sync issues
+                        fetchTransactions()
+                        fetchSummary()
+                    }
+                )
+                .subscribe()
 
-            fetchSummary() // Refresh summary on any change
-        })
-
-        const categorySubscription = subscribeToCategories((payload) => {
-            console.log('Category change:', payload)
-
-            switch (payload.eventType) {
-                case 'INSERT':
-                    setCategories(prev => [...prev, payload.new])
-                    break
-                case 'UPDATE':
-                    setCategories(prev =>
-                        prev.map(category =>
-                            category.id === payload.new.id ? payload.new : category
-                        )
-                    )
-                    break
-                case 'DELETE':
-                    setCategories(prev =>
-                        prev.filter(category => category.id !== payload.old.id)
-                    )
-                    break
-            }
-        })
+            // Subscribe to category changes
+            categorySubscription = supabase
+                .channel('categories_changes')
+                .on('postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'categories'
+                    },
+                    (payload) => {
+                        console.log('Category change:', payload)
+                        fetchCategories()
+                    }
+                )
+                .subscribe()
+        } catch (error) {
+            console.error('Subscription error:', error)
+        }
 
         // Cleanup subscriptions
         return () => {
             if (transactionSubscription) {
-                transactionSubscription.unsubscribe()
+                supabase.removeChannel('transactions_changes')
             }
             if (categorySubscription) {
-                categorySubscription.unsubscribe()
+                supabase.removeChannel('categories_changes')
             }
         }
     }, [])
@@ -215,7 +217,7 @@ export const useTransactions = (filters = {}) => {
     }
 }
 
-// Hook for transaction summary only (lighter weight)
+// Hook for transaction summary only
 export const useTransactionSummary = (period = 'today') => {
     const [summary, setSummary] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -238,7 +240,7 @@ export const useTransactionSummary = (period = 'today') => {
 
     useEffect(() => {
         fetchSummary()
-    }, [fetchSummary])
+    }, [period])
 
     return {
         summary,
@@ -307,33 +309,33 @@ export const useCategories = () => {
 
     useEffect(() => {
         fetchCategories()
-    }, [fetchCategories])
+    }, [])
 
     // Real-time subscription
     useEffect(() => {
-        const subscription = subscribeToCategories((payload) => {
-            switch (payload.eventType) {
-                case 'INSERT':
-                    setCategories(prev => [...prev, payload.new])
-                    break
-                case 'UPDATE':
-                    setCategories(prev =>
-                        prev.map(category =>
-                            category.id === payload.new.id ? payload.new : category
-                        )
-                    )
-                    break
-                case 'DELETE':
-                    setCategories(prev =>
-                        prev.filter(category => category.id !== payload.old.id)
-                    )
-                    break
-            }
-        })
+        let subscription = null
+
+        try {
+            subscription = supabase
+                .channel('categories_simple')
+                .on('postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'categories'
+                    },
+                    () => {
+                        fetchCategories() // Just refetch on any change
+                    }
+                )
+                .subscribe()
+        } catch (error) {
+            console.error('Category subscription error:', error)
+        }
 
         return () => {
             if (subscription) {
-                subscription.unsubscribe()
+                supabase.removeChannel('categories_simple')
             }
         }
     }, [])
