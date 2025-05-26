@@ -1,21 +1,16 @@
--- TradeTracker AI Database Schema
+-- TradeTracker AI - Working Database Schema for Supabase
 -- Execute these commands in your Supabase SQL Editor
 
--- Enable Row Level Security
-ALTER DATABASE postgres SET "app.settings.jwt_secret" TO 'your-jwt-secret';
-
--- Create custom types
+-- Step 1: Create custom types
 CREATE TYPE transaction_type AS ENUM ('income', 'expense');
 CREATE TYPE business_type AS ENUM (
-    'retail_shop', 'market_trader', 'street_vendor', 'farmer',
-    'service_provider', 'food_beverage', 'transport', 'other'
+  'retail_shop', 'market_trader', 'street_vendor', 'farmer',
+  'service_provider', 'food_beverage', 'transport', 'other'
 );
 
--- =============================================
--- USERS TABLE (extends Supabase auth.users)
--- =============================================
-CREATE TABLE public.users (
-    id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+-- Step 2: Create users table (extends Supabase auth.users)
+CREATE TABLE IF NOT EXISTS public.users (
+                                            id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
     email TEXT UNIQUE NOT NULL,
     full_name TEXT,
     phone TEXT,
@@ -25,13 +20,11 @@ CREATE TABLE public.users (
     currency TEXT DEFAULT 'KES',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
+    );
 
--- =============================================
--- CATEGORIES TABLE
--- =============================================
-CREATE TABLE public.categories (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+-- Step 3: Create categories table
+CREATE TABLE IF NOT EXISTS public.categories (
+                                                 id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
     name TEXT NOT NULL,
     type transaction_type NOT NULL,
@@ -39,13 +32,11 @@ CREATE TABLE public.categories (
     icon TEXT DEFAULT '📦',
     is_default BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
+    );
 
--- =============================================
--- TRANSACTIONS TABLE
--- =============================================
-CREATE TABLE public.transactions (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+-- Step 4: Create transactions table
+CREATE TABLE IF NOT EXISTS public.transactions (
+                                                   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
     category_id UUID REFERENCES public.categories(id) ON DELETE SET NULL,
     type transaction_type NOT NULL,
@@ -55,21 +46,19 @@ CREATE TABLE public.transactions (
     transaction_date DATE NOT NULL DEFAULT CURRENT_DATE,
 
     -- AI and Voice Input Fields
-    voice_input TEXT, -- Original voice command
-    receipt_url TEXT, -- Photo receipt URL
-    ai_confidence DECIMAL(3,2), -- AI processing confidence (0.00-1.00)
+    voice_input TEXT,
+    receipt_url TEXT,
+    ai_confidence DECIMAL(3,2),
     ai_processed BOOLEAN DEFAULT false,
 
     -- Metadata
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
+    );
 
--- =============================================
--- INSIGHTS TABLE (for AI-generated business insights)
--- =============================================
-CREATE TABLE public.insights (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+-- Step 5: Create insights table
+CREATE TABLE IF NOT EXISTS public.insights (
+                                               id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
     period_start DATE NOT NULL,
     period_end DATE NOT NULL,
@@ -84,29 +73,27 @@ CREATE TABLE public.insights (
     trends JSONB,
 
     generated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
+    );
 
--- =============================================
--- INDEXES for Performance
--- =============================================
-CREATE INDEX idx_transactions_user_id ON public.transactions(user_id);
-CREATE INDEX idx_transactions_date ON public.transactions(transaction_date);
-CREATE INDEX idx_transactions_type ON public.transactions(type);
-CREATE INDEX idx_transactions_user_date ON public.transactions(user_id, transaction_date);
-CREATE INDEX idx_categories_user_id ON public.categories(user_id);
-CREATE INDEX idx_insights_user_id ON public.insights(user_id);
+-- Step 6: Create indexes for performance
+CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON public.transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_date ON public.transactions(transaction_date);
+CREATE INDEX IF NOT EXISTS idx_transactions_type ON public.transactions(type);
+CREATE INDEX IF NOT EXISTS idx_transactions_user_date ON public.transactions(user_id, transaction_date);
+CREATE INDEX IF NOT EXISTS idx_categories_user_id ON public.categories(user_id);
+CREATE INDEX IF NOT EXISTS idx_insights_user_id ON public.insights(user_id);
 
--- =============================================
--- ROW LEVEL SECURITY POLICIES
--- =============================================
-
--- Enable RLS on all tables
+-- Step 7: Enable Row Level Security
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.insights ENABLE ROW LEVEL SECURITY;
 
--- Users can only access their own data
+-- Step 8: Create RLS policies for users table
+DROP POLICY IF EXISTS "Users can view own profile" ON public.users;
+DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
+DROP POLICY IF EXISTS "Users can insert own profile" ON public.users;
+
 CREATE POLICY "Users can view own profile" ON public.users
   FOR SELECT USING (auth.uid() = id);
 
@@ -116,7 +103,12 @@ CREATE POLICY "Users can update own profile" ON public.users
 CREATE POLICY "Users can insert own profile" ON public.users
   FOR INSERT WITH CHECK (auth.uid() = id);
 
--- Categories policies
+-- Step 9: Create RLS policies for categories table
+DROP POLICY IF EXISTS "Users can view own categories" ON public.categories;
+DROP POLICY IF EXISTS "Users can create own categories" ON public.categories;
+DROP POLICY IF EXISTS "Users can update own categories" ON public.categories;
+DROP POLICY IF EXISTS "Users can delete own categories" ON public.categories;
+
 CREATE POLICY "Users can view own categories" ON public.categories
   FOR SELECT USING (auth.uid() = user_id);
 
@@ -129,7 +121,12 @@ CREATE POLICY "Users can update own categories" ON public.categories
 CREATE POLICY "Users can delete own categories" ON public.categories
   FOR DELETE USING (auth.uid() = user_id);
 
--- Transactions policies
+-- Step 10: Create RLS policies for transactions table
+DROP POLICY IF EXISTS "Users can view own transactions" ON public.transactions;
+DROP POLICY IF EXISTS "Users can create own transactions" ON public.transactions;
+DROP POLICY IF EXISTS "Users can update own transactions" ON public.transactions;
+DROP POLICY IF EXISTS "Users can delete own transactions" ON public.transactions;
+
 CREATE POLICY "Users can view own transactions" ON public.transactions
   FOR SELECT USING (auth.uid() = user_id);
 
@@ -142,61 +139,22 @@ CREATE POLICY "Users can update own transactions" ON public.transactions
 CREATE POLICY "Users can delete own transactions" ON public.transactions
   FOR DELETE USING (auth.uid() = user_id);
 
--- Insights policies
+-- Step 11: Create RLS policies for insights table
+DROP POLICY IF EXISTS "Users can view own insights" ON public.insights;
+DROP POLICY IF EXISTS "Users can create own insights" ON public.insights;
+
 CREATE POLICY "Users can view own insights" ON public.insights
   FOR SELECT USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can create own insights" ON public.insights
   FOR INSERT WITH CHECK (auth.uid() = user_id);
 
--- =============================================
--- DEFAULT CATEGORIES
--- =============================================
-
--- Function to create default categories for new users
-CREATE OR REPLACE FUNCTION create_default_categories_for_user(user_id UUID)
-RETURNS void AS $$
-BEGIN
-  -- Default Income Categories
-INSERT INTO public.categories (user_id, name, type, color, icon, is_default) VALUES
-                                                                                 (user_id, 'Sales', 'income', '#22C55E', '💰', true),
-                                                                                 (user_id, 'Services', 'income', '#10B981', '🛠️', true),
-                                                                                 (user_id, 'Other Income', 'income', '#06B6D4', '📈', true);
-
--- Default Expense Categories
-INSERT INTO public.categories (user_id, name, type, color, icon, is_default) VALUES
-                                                                                 (user_id, 'Inventory', 'expense', '#EF4444', '📦', true),
-                                                                                 (user_id, 'Transport', 'expense', '#F59E0B', '🚗', true),
-                                                                                 (user_id, 'Food & Meals', 'expense', '#8B5CF6', '🍽️', true),
-                                                                                 (user_id, 'Utilities', 'expense', '#3B82F6', '💡', true),
-                                                                                 (user_id, 'Marketing', 'expense', '#EC4899', '📱', true),
-                                                                                 (user_id, 'Other Expenses', 'expense', '#6B7280', '📝', true);
-END;
-$$ LANGUAGE plpgsql;
-
--- =============================================
--- TRIGGERS
--- =============================================
-
--- Update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = timezone('utc'::text, now());
-RETURN NEW;
-END;
-$$ language 'plpgsql';
-
--- Apply updated_at trigger to tables
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users
-    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-
-CREATE TRIGGER update_transactions_updated_at BEFORE UPDATE ON public.transactions
-    FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-
--- Trigger to create user profile and default categories on signup
+-- Step 12: Create function to handle new user signup
 CREATE OR REPLACE FUNCTION handle_new_user()
-RETURNS trigger AS $$
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = public
+AS $
 BEGIN
 INSERT INTO public.users (id, email, full_name)
 VALUES (
@@ -205,34 +163,46 @@ VALUES (
            COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email)
        );
 
--- Create default categories
-PERFORM create_default_categories_for_user(NEW.id);
+-- Create default income categories
+INSERT INTO public.categories (user_id, name, type, color, icon, is_default) VALUES
+                                                                                 (NEW.id, 'Sales', 'income', '#22C55E', '💰', true),
+                                                                                 (NEW.id, 'Services', 'income', '#10B981', '🛠️', true),
+                                                                                 (NEW.id, 'Other Income', 'income', '#06B6D4', '📈', true);
+
+-- Create default expense categories
+INSERT INTO public.categories (user_id, name, type, color, icon, is_default) VALUES
+                                                                                 (NEW.id, 'Inventory', 'expense', '#EF4444', '📦', true),
+                                                                                 (NEW.id, 'Transport', 'expense', '#F59E0B', '🚗', true),
+                                                                                 (NEW.id, 'Food & Meals', 'expense', '#8B5CF6', '🍽️', true),
+                                                                                 (NEW.id, 'Utilities', 'expense', '#3B82F6', '💡', true),
+                                                                                 (NEW.id, 'Marketing', 'expense', '#EC4899', '📱', true),
+                                                                                 (NEW.id, 'Other Expenses', 'expense', '#6B7280', '📝', true);
 
 RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$;
 
--- Trigger on auth.users
+-- Step 13: Create trigger for new user signup
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW EXECUTE PROCEDURE handle_new_user();
 
--- =============================================
--- UTILITY FUNCTIONS
--- =============================================
-
--- Function to calculate profit for a date range
+-- Step 14: Create function for profit calculations
 CREATE OR REPLACE FUNCTION calculate_profit_for_period(
-       p_user_id UUID,
-       p_start_date DATE,
-       p_end_date DATE
+  p_user_id UUID,
+  p_start_date DATE,
+  p_end_date DATE
 )
 RETURNS TABLE(
-       total_revenue DECIMAL(15,2),
-       total_expenses DECIMAL(15,2),
-       net_profit DECIMAL(15,2),
-       profit_margin DECIMAL(5,2)
-) AS $$
+  total_revenue DECIMAL(15,2),
+  total_expenses DECIMAL(15,2),
+  net_profit DECIMAL(15,2),
+  profit_margin DECIMAL(5,2)
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $
 BEGIN
 RETURN QUERY
     WITH profit_calc AS (
@@ -253,9 +223,9 @@ SELECT
         END as profit_margin
 FROM profit_calc pc;
 END;
-$$ LANGUAGE plpgsql;
+$;
 
--- Grant necessary permissions
+-- Step 15: Grant permissions
 GRANT USAGE ON SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
