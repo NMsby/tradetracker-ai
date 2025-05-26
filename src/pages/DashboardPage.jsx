@@ -6,6 +6,7 @@ import { transactionUtils } from '@/api/transactions'
 import TransactionForm from '@/components/forms/TransactionForm'
 import TransactionList from '@/components/dashboard/TransactionList'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import DatabaseTest from "@/components/debug/DatabaseTest.jsx";
 
 const DashboardPage = () => {
     const { user, signOut } = useAuth()
@@ -13,6 +14,7 @@ const DashboardPage = () => {
         transactions,
         categories,
         loading,
+        error,
         createTransaction,
         updateTransaction,
         deleteTransaction
@@ -22,26 +24,49 @@ const DashboardPage = () => {
     const [showTransactionForm, setShowTransactionForm] = useState(false)
     const [editingTransaction, setEditingTransaction] = useState(null)
     const [formLoading, setFormLoading] = useState(false)
+    const [showDebug, setShowDebug] = useState(false)
+
+    console.log('Dashboard state:', {
+        transactions,
+        categories,
+        loading,
+        error,
+        summary,
+        summaryLoading
+    })
 
     const handleSignOut = async () => {
         await signOut()
     }
 
     const handleCreateTransaction = async (transactionData) => {
+        console.log('Creating transaction:', transactionData)
         setFormLoading(true)
-        const { error } = await createTransaction(transactionData)
 
-        if (!error) {
-            setShowTransactionForm(false)
+        try {
+            const { data, error } = await createTransaction(transactionData)
+            console.log('Create result:', { data, error })
+
+            if (!error) {
+                setShowTransactionForm(false)
+                console.log('Transaction created successfully')
+            } else {
+                console.log('Transaction creation error:', error)
+            }
+
+            setFormLoading(false)
+            return { data, error }
+        } catch (err) {
+            console.error('Transaction creation exception:', err)
+            setFormLoading(false)
+            return { data: null, error: err.message }
         }
-
-        setFormLoading(false)
-        return { error }
     }
 
     const handleUpdateTransaction = async (transactionData) => {
         if (!editingTransaction) return
 
+        console.log('Updating transaction:', editingTransaction.id, transactionData)
         setFormLoading(true)
         const { error } = await updateTransaction(editingTransaction.id, transactionData)
 
@@ -80,6 +105,13 @@ const DashboardPage = () => {
                             <span className="text-2xl font-bold text-gradient">📊 TradeTracker AI</span>
                         </div>
                         <div className="flex items-center space-x-4">
+                            <button
+                                onClick={() => setShowDebug(!showDebug)}
+                                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+                            >
+                                <Bug className="h-4 w-4" />
+                                <span className="text-sm">Debug</span>
+                            </button>
                             <div className="flex items-center space-x-2 text-gray-600">
                                 <User className="h-4 w-4" />
                                 <span className="text-sm">{user?.email}</span>
@@ -96,8 +128,18 @@ const DashboardPage = () => {
                 </div>
             </header>
 
+            {/* Debug Panel */}
+            {showDebug && <DatabaseTest />}
+
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Error Display */}
+                {error && (
+                    <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+                        <strong>Error:</strong> {error}
+                    </div>
+                )}
+
                 {/* Header Section */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
                     <div>
