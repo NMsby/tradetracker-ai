@@ -1,0 +1,68 @@
+{
+  "name": "tradetracker-ai",
+  "version": "1.0.0",
+  "description": "AI-powered expense tracker for African small traders with voice input and smart insights",
+  "type": "module",
+  "keywords": [
+    "hackathon",
+    "ai",
+    "fintech",
+    "africa",
+    "small-business",
+    "voice-recognition",
+    "expense-tracker",
+    "react",
+    "supabase"
+  ],
+  "author": "Nelson Masbayi nmsby.dev@gmail.com",
+  "license": "MIT",
+  "homepage": "https://github.com/NMsby/tradetracker-ai#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NMsby/tradetracker-ai.git"
+  },
+  "bugs": {
+    "url": "https://github.com/NMsby/tradetracker-ai/issues"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "test": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@supabase/supabase-js": "^2.39.3",
+    "lucide-react": "^0.263.1",
+    "recharts": "^2.8.0",
+    "react-router-dom": "^6.8.1",
+    "react-hook-form": "^7.43.1",
+    "date-fns": "^2.29.3",
+    "clsx": "^1.2.1",
+    "tailwind-merge": "^2.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.1.0",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "prettier": "^3.2.4",
+    "tailwindcss": "^3.4.1",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "vitest": "^1.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+}
