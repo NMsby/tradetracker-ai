@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { transactionAPI, categoryAPI, supabase } from '@/api/transactions'
+import { transactionAPI, categoryAPI } from '@/api/transactions'
+import { supabase } from '@/api/supabase.js'
 
 export const useTransactions = (filters = {}) => {
     const [transactions, setTransactions] = useState([])
