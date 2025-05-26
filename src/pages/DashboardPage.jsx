@@ -1,12 +1,13 @@
 import React, { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTransactions, useTransactionSummary } from '@/hooks/useTransactions'
-import { LogOut, User, Plus, TrendingUp, TrendingDown, DollarSign, Bug } from 'lucide-react'
+import { LogOut, User, Plus, TrendingUp, TrendingDown, DollarSign, Bug, Settings, Mic } from 'lucide-react'
 import { transactionUtils } from '@/api/transactions'
 import TransactionForm from '@/components/forms/TransactionForm'
 import TransactionList from '@/components/dashboard/TransactionList'
+import VoiceRecorderComponent from '@/components/voice/VoiceRecorder.jsx'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
-import DatabaseTest from "@/components/debug/DatabaseTest.jsx";
+import DatabaseTest from '@/components/debug/DatabaseTest.jsx'
 
 const DashboardPage = () => {
     const { user, signOut } = useAuth()
@@ -25,6 +26,7 @@ const DashboardPage = () => {
     const [editingTransaction, setEditingTransaction] = useState(null)
     const [formLoading, setFormLoading] = useState(false)
     const [showDebug, setShowDebug] = useState(false)
+    const [showVoiceRecorder, setShowVoiceRecorder] = useState(false)
 
     console.log('Dashboard state:', {
         transactions,
@@ -39,6 +41,28 @@ const DashboardPage = () => {
         await signOut()
     }
 
+    const handleVoiceTransaction = async (transactionData) => {
+        console.log('Processing voice transaction:', transactionData)
+
+        try {
+            const { data, error } = await createTransaction(transactionData)
+            console.log('Voice transaction result:', { data, error })
+
+            if (!error) {
+                setShowVoiceRecorder(false)
+                console.log('Voice transaction created successfully')
+            } else {
+                console.error('Voice transaction creation error:', error)
+                // Handle error - show toast notification
+            }
+
+            return { data, error }
+        } catch (err) {
+            console.error('Voice transaction creation error:', err)
+            return { data: null, error: err.message }
+        }
+    }
+
     const handleCreateTransaction = async (transactionData) => {
         console.log('Creating transaction:', transactionData)
         setFormLoading(true)
@@ -51,7 +75,7 @@ const DashboardPage = () => {
                 setShowTransactionForm(false)
                 console.log('Transaction created successfully')
             } else {
-                console.log('Transaction creation error:', error)
+                console.error('Transaction creation error:', error)
             }
 
             setFormLoading(false)
@@ -146,13 +170,22 @@ const DashboardPage = () => {
                         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
                         <p className="text-gray-600 mt-2">Track your business finances with AI-powered insights.</p>
                     </div>
-                    <button
-                        onClick={() => setShowTransactionForm(true)}
-                        className="btn-primary mt-4 sm:mt-0 flex items-center space-x-2"
-                    >
-                        <Plus className="h-5 w-5" />
-                        <span>Add Transaction</span>
-                    </button>
+                    <div className="flex space-x-3 mt-4 sm:mt-0">
+                        <button
+                            onClick={() => setShowVoiceRecorder(true)}
+                            className="btn-success flex items-center space-x-2"
+                        >
+                            <Mic className="h-5 w-5" />
+                            <span>Voice Input</span>
+                        </button>
+                        <button
+                            onClick={() => setShowTransactionForm(true)}
+                            className="btn-primary flex items-center space-x-2"
+                        >
+                            <Plus className="h-5 w-5" />
+                            <span>Add Transaction</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Summary Cards */}
@@ -253,15 +286,18 @@ const DashboardPage = () => {
                         </div>
                     </button>
 
-                    <div className="card bg-gradient-to-r from-primary-50 to-accent-50 border-primary-200">
+                    <button
+                        onClick={() => setShowVoiceRecorder(true)}
+                        className="card card-hover text-left p-6 transition-all duration-200 hover:scale-105"
+                    >
                         <div className="flex items-center space-x-4">
                             <div className="text-4xl">🎤</div>
                             <div>
-                                <h3 className="font-semibold text-gray-900">Voice Input</h3>
-                                <p className="text-sm text-gray-600">Coming in next update</p>
+                                <h3 className="font-semibold text-gray-900">Voice Recording</h3>
+                                <p className="text-sm text-gray-600">Say your transaction naturally</p>
                             </div>
                         </div>
-                    </div>
+                    </button>
                 </div>
 
                 {/* Recent Transactions */}
@@ -284,6 +320,14 @@ const DashboardPage = () => {
                     />
                 </div>
             </main>
+
+            {/* Voice Recorder Modal */}
+            {showVoiceRecorder && (
+                <VoiceRecorderComponent
+                    onTransactionParsed={handleVoiceTransaction}
+                    onClose={() => setShowVoiceRecorder(false)}
+                />
+            )}
 
             {/* Transaction Form Modal */}
             <TransactionForm

@@ -53,7 +53,7 @@ const LandingPage = () => {
                             <Mic className="h-12 w-12 text-primary-600 mx-auto mb-4" />
                             <h3 className="font-semibold text-gray-900 mb-2">Voice Input</h3>
                             <p className="text-gray-600 text-sm">
-                                "Sold 5 bags of rice for 2000 shillings" - spoken transactions
+                                "Sold 5 bags of rice for 2000 shillings" - AI processes spoken transactions
                             </p>
                         </div>
 
