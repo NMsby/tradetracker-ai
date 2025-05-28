@@ -61,7 +61,7 @@ const LandingPage = () => {
                             <Camera className="h-12 w-12 text-accent-600 mx-auto mb-4" />
                             <h3 className="font-semibold text-gray-900 mb-2">Receipt Scanning</h3>
                             <p className="text-gray-600 text-sm">
-                                Snap photos of receipts for automatic expense tracking
+                                Snap photos of receipts for AI-powered automatic expense tracking
                             </p>
                         </div>
 

@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTransactions, useTransactionSummary } from '@/hooks/useTransactions'
-import { LogOut, User, Plus, TrendingUp, TrendingDown, DollarSign, Bug, Settings, Mic } from 'lucide-react'
+import { LogOut, User, Plus, TrendingUp, TrendingDown, DollarSign, Bug, Settings, Mic, Camera } from 'lucide-react'
 import { transactionUtils } from '@/api/transactions'
 import TransactionForm from '@/components/forms/TransactionForm'
 import TransactionList from '@/components/dashboard/TransactionList'
 import VoiceRecorderComponent from '@/components/voice/VoiceRecorder.jsx'
+import ReceiptScanner from "@/components/receipt/ReceiptScanner.jsx";
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 import DatabaseTest from '@/components/debug/DatabaseTest.jsx'
 
@@ -27,6 +28,7 @@ const DashboardPage = () => {
     const [formLoading, setFormLoading] = useState(false)
     const [showDebug, setShowDebug] = useState(false)
     const [showVoiceRecorder, setShowVoiceRecorder] = useState(false)
+    const [showReceiptScanner, setShowReceiptScanner] = useState(false)
 
     console.log('Dashboard state:', {
         transactions,
@@ -39,6 +41,27 @@ const DashboardPage = () => {
 
     const handleSignOut = async () => {
         await signOut()
+    }
+
+    const handleReceiptTransaction = async (transactionData) => {
+        console.log('Processing receipt transaction:', transactionData)
+
+        try {
+            const {data, error} = await createTransaction(transactionData)
+            console.log('Receipt transaction result:', {data, error})
+
+            if (!error) {
+                setShowReceiptScanner(false)
+                console.log('Receipt transaction created successfully')
+            } else {
+                console.error('Receipt transaction creation error:', error)
+            }
+
+            return {data, error}
+        } catch (err) {
+            console.error('Receipt transaction exception:', err)
+            return {data: null, error: err.message}
+        }
     }
 
     const handleVoiceTransaction = async (transactionData) => {
@@ -170,20 +193,27 @@ const DashboardPage = () => {
                         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
                         <p className="text-gray-600 mt-2">Track your business finances with AI-powered insights.</p>
                     </div>
-                    <div className="flex space-x-3 mt-4 sm:mt-0">
+                    <div className="flex flex-wrap gap-2 mt-4 sm:mt-0">
                         <button
                             onClick={() => setShowVoiceRecorder(true)}
                             className="btn-success flex items-center space-x-2"
                         >
-                            <Mic className="h-5 w-5" />
+                            <Mic className="h-4 w-4" />
                             <span>Voice Input</span>
+                        </button>
+                        <button
+                            onClick={() => setShowReceiptScanner(true)}
+                            className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center space-x-2"
+                        >
+                            <Camera className="h-4 w-4" />
+                            <span>Scan Receipt</span>
                         </button>
                         <button
                             onClick={() => setShowTransactionForm(true)}
                             className="btn-primary flex items-center space-x-2"
                         >
-                            <Plus className="h-5 w-5" />
-                            <span>Add Transaction</span>
+                            <Plus className="h-4 w-4" />
+                            <span>Manual Entry</span>
                         </button>
                     </div>
                 </div>
@@ -320,6 +350,14 @@ const DashboardPage = () => {
                     />
                 </div>
             </main>
+
+            {/* Receipt Scanner Modal */}
+            {showReceiptScanner && (
+                <ReceiptScanner
+                    onTransactionParsed={handleReceiptTransaction}
+                    onClose={() => setShowReceiptScanner(false)}
+                />
+            )}
 
             {/* Voice Recorder Modal */}
             {showVoiceRecorder && (
