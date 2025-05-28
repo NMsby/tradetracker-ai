@@ -1,7 +1,21 @@
 import React, { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { useTransactions, useTransactionSummary } from '@/hooks/useTransactions'
-import { LogOut, User, Plus, TrendingUp, TrendingDown, DollarSign, Bug, Settings, Mic, Camera } from 'lucide-react'
+import {
+    LogOut,
+    User,
+    Plus,
+    TrendingUp,
+    TrendingDown,
+    DollarSign,
+    Bug,
+    Settings,
+    Mic,
+    Camera,
+    BarChart3,
+    Home
+} from 'lucide-react'
 import { transactionUtils } from '@/api/transactions'
 import TransactionForm from '@/components/forms/TransactionForm'
 import TransactionList from '@/components/dashboard/TransactionList'
@@ -148,8 +162,23 @@ const DashboardPage = () => {
             <header className="bg-white shadow-sm border-b">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center py-4">
-                        <div className="flex items-center">
-                            <span className="text-2xl font-bold text-gradient">📊 TradeTracker AI</span>
+                        <div className="flex items-center space-x-4">
+                            <Link to="/dashboard" className="text-2xl font-bold text-gradient">
+                                📊 TradeTracker AI
+                            </Link>
+                            <nav className="hidden md:flex items-center space-x-4">
+                                <div className="flex items-center space-x-2 text-primary-600">
+                                    <Home className="h-4 w-4" />
+                                    <span className="text-sm font-medium">Dashboard</span>
+                                </div>
+                                <Link
+                                    to="/analytics"
+                                    className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+                                >
+                                    <BarChart3 className="h-4 w-4" />
+                                    <span className="text-sm">Analytics</span>
+                                </Link>
+                            </nav>
                         </div>
                         <div className="flex items-center space-x-4">
                             <button

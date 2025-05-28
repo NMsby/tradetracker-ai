@@ -7,6 +7,7 @@ import LandingPage from '@/pages/LandingPage'
 import LoginPage from '@/pages/LoginPage'
 import SignUpPage from '@/pages/SignUpPage'
 import DashboardPage from '@/pages/DashboardPage'
+import AnalyticsPage from "@/pages/AnalyticsPage.jsx";
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
 // Protected Route Component
@@ -76,6 +77,14 @@ const AppRoutes = () => {
                     element={
                         <ProtectedRoute>
                             <DashboardPage />
+                        </ProtectedRoute>
+                    }
+                />
+                <Route
+                    path="/analytics"
+                    element={
+                        <ProtectedRoute>
+                            <AnalyticsPage />
                         </ProtectedRoute>
                     }
                 />
