@@ -101,6 +101,18 @@ VITE_GOOGLE_VISION_API_KEY=your_vision_api_key
 - "Bought transport fuel for 800 shillings"
 - "Purchased inventory worth 15,000 from supplier"
 
+## 🎤 Hackathon Presentation
+
+**📊 [View Pitch Deck](./docs/presentation/)**
+
+**🎬 Live Demo:** [https://tradetracker-ai.vercel.app](https://tradetracker-ai.vercel.app)
+
+### Presentation Highlights
+- **Problem:** Small traders lose 15–25% profits due to poor expense tracking
+- **Solution:** AI-powered voice and photo expense tracking
+- **Impact:** 200M+ potential users across Africa
+- **Tech:** React + Supabase + OpenAI + Google Vision
+
 ## 🏆 Hackathon Submission
 
 **Event:** Vibe Coding Hackathon 2025 - PowerLearnProject Academy Africa  
